@@ -149,6 +149,7 @@ class CanvasRenderer(
             if (!removals.remove(layer)) {
                 val view = LayerView(this, layer)
                 layers[layer] = view
+                assist.visibleTiles.forEach { view.onTileEnter(it) }
             }
         }
 
