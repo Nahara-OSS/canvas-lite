@@ -1,5 +1,6 @@
 package io.github.naharaoss.canvaslite.engine.project
 
+import android.graphics.Bitmap
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import io.github.naharaoss.canvaslite.engine.Blending
@@ -9,6 +10,7 @@ import io.github.naharaoss.canvaslite.ext.readAsJson
 import io.github.naharaoss.canvaslite.ext.writeAsJson
 import kotlinx.serialization.Serializable
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import java.io.RandomAccessFile
 import java.io.Serial
@@ -81,6 +83,12 @@ class ScuffedFileCanvas(val root: File) : Canvas {
         metadata = metadata.copy(layers = _layers.map { it.layerId })
         layer.root.deleteRecursively()
         if (currentlySelected) currentLayer = if (layers.isNotEmpty()) layers.lastIndex else null
+    }
+
+    override fun putThumbnail(bitmap: Bitmap) {
+        FileOutputStream(File(root, "thumbnail.png")).use { stream ->
+            bitmap.compress(Bitmap.CompressFormat.PNG, 0, stream)
+        }
     }
 
     private class FileLayer(

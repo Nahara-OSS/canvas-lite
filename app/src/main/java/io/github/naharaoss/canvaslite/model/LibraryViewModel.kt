@@ -1,5 +1,6 @@
 package io.github.naharaoss.canvaslite.model
 
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
@@ -32,5 +33,9 @@ class LibraryViewModel(val library: Library) : ViewModel() {
             val item = library.createCanvas(parentId, preset)
             onFinished(item)
         }
+    }
+
+    fun loadThumbnail(canvasId: String, onFinished: (ImageBitmap?) -> Unit) {
+        viewModelScope.launch { onFinished(library.loadThumbnail(canvasId)) }
     }
 }

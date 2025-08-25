@@ -1,5 +1,11 @@
 package io.github.naharaoss.canvaslite.engine.project
 
+import android.graphics.ImageDecoder
+import android.util.Log
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.set
 import io.github.naharaoss.canvaslite.ext.readAsJson
 import io.github.naharaoss.canvaslite.ext.writeAsJson
 import kotlinx.coroutines.Dispatchers
@@ -94,6 +100,11 @@ class LibraryImpl(val root: File) : Library {
 
     override suspend fun delete(libraryId: String) {
         TODO("Not yet implemented")
+    }
+
+    override suspend fun loadThumbnail(canvasId: String): ImageBitmap? {
+        val file = File(contentRoot, "$canvasId/thumbnail.png")
+        return if (file.exists()) ImageDecoder.decodeBitmap(ImageDecoder.createSource(file)).asImageBitmap() else null
     }
 
     @Serializable

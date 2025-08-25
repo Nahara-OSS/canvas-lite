@@ -19,9 +19,13 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
@@ -39,6 +43,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -59,6 +64,8 @@ import io.github.naharaoss.canvaslite.compose.page.LibraryPageScaffold
 import io.github.naharaoss.canvaslite.compose.page.LibraryRoute
 import io.github.naharaoss.canvaslite.compose.Overlay
 import io.github.naharaoss.canvaslite.compose.OverlayState
+import io.github.naharaoss.canvaslite.compose.TimeDisplayText
+import io.github.naharaoss.canvaslite.compose.page.LibraryItem
 import io.github.naharaoss.canvaslite.compose.page.PreferencesPage
 import io.github.naharaoss.canvaslite.compose.page.PreferencesRoute
 import io.github.naharaoss.canvaslite.compose.panel.LayerBackgroundItem
@@ -139,16 +146,57 @@ class MainActivity : ComponentActivity() {
                                         LaunchedEffect(Unit) { folderViewModel.refresh() }
 
                                         LibraryPageContent(
-                                            items = items,
-                                            innerPadding = innerPadding,
-                                            onOpen = {
-                                                when (it.type) {
-                                                    Library.ItemType.Folder -> libraryNavController.navigate(LibraryRoute(it.libraryId, it.metadata.name))
-                                                    Library.ItemType.Canvas -> navController.navigate(CanvasPage(it.libraryId))
-                                                    else -> {}
+                                            empty = items?.isEmpty() ?: false,
+                                            loading = items == null,
+                                            innerPadding = innerPadding
+                                        ) {
+                                            val items = items
+                                            if (items != null) items(items, { it.libraryId }) { item ->
+                                                LibraryItem(
+                                                    onClick = {
+                                                        when (item.type) {
+                                                            Library.ItemType.Canvas -> navController.navigate(CanvasPage(item.libraryId))
+                                                            Library.ItemType.Folder -> libraryNavController.navigate(LibraryRoute(item.libraryId, item.metadata.name))
+                                                        }
+                                                    },
+                                                    name = { Text(item.metadata.name) },
+                                                    supportingContent = {
+                                                        when {
+                                                            item.type == Library.ItemType.Folder -> Text("Folder")
+                                                            item.type == Library.ItemType.Canvas && item.metadata.canvasSize == null -> Text("Infinite canvas")
+                                                            item.type == Library.ItemType.Canvas && item.metadata.canvasSize != null -> Text(item.metadata.canvasSize.toString())
+                                                            else -> item.type.toString()
+                                                        }
+
+                                                        TimeDisplayText(item.metadata.lastModified)
+                                                    }
+                                                ) {
+                                                    if (item.type == Library.ItemType.Canvas) {
+                                                        var thumbnail: ImageBitmap? by remember { mutableStateOf(null) }
+
+                                                        LaunchedEffect(item.libraryId) {
+                                                            thumbnail = folderViewModel.library.loadThumbnail(item.libraryId)
+                                                            Log.d("MainActivity", "Thumbnail is $thumbnail")
+                                                        }
+
+                                                        Box(Modifier
+                                                            .aspectRatio(item.metadata.canvasSize?.let { it.width / it.height.toFloat() } ?: 1f)
+                                                            .background(Color.White, MaterialTheme.shapes.medium)) {
+                                                            val thumbnail = thumbnail
+
+                                                            if (thumbnail != null) {
+                                                                Log.d("MainActivity", "Recompose with $thumbnail")
+                                                                Image(
+                                                                    modifier = Modifier.fillMaxSize(),
+                                                                    bitmap = thumbnail,
+                                                                    contentDescription = null
+                                                                )
+                                                            }
+                                                        }
+                                                    }
                                                 }
                                             }
-                                        )
+                                        }
                                     }
                                 }
                             }

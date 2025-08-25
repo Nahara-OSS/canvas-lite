@@ -1,9 +1,11 @@
 package io.github.naharaoss.canvaslite.engine.project
 
 import android.annotation.SuppressLint
+import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.platform.LocalResources
 import io.github.naharaoss.canvaslite.engine.Blending
 import io.github.naharaoss.canvaslite.ext.ColorSerializer
@@ -37,6 +39,8 @@ interface Canvas {
     ): Layer
 
     fun removeLayer(layer: Layer)
+
+    fun putThumbnail(bitmap: Bitmap) {}
 
     @Serializable
     data class CanvasSize(val width: Int, val height: Int) {
