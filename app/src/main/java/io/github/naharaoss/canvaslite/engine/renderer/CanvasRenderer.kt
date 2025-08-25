@@ -357,6 +357,28 @@ class CanvasRenderer(
         }
     }
 
+    /**
+     * Render to temporary render target then transfer the pixels in RGBA format to provided byte
+     * buffer.
+     */
+    fun captureAsRgba(worldToViewport: Matrix, width: Int, height: Int, dst: ByteBuffer) {
+        GPUTexture(GPUTexture.Type.Texture2D).use { color ->
+            color.bind { initTexture(width, height) }
+
+            GPURenderTarget().use { target ->
+                target.bind {
+                    attach(GPURenderTarget.Attachment.Color(0), color)
+                    ensureCompleted()
+                    GLES20.glViewport(0, 0, width, height)
+                    renderBackground(worldToViewport)
+                    renderContent(worldToViewport)
+                    readPixels(0, 0, width, height, dst)
+                    dst.position(dst.position() + width * height * 4)
+                }
+            }
+        }
+    }
+
     override fun close() {
         trackDrawingTiles = false
         drawingTiles.clear()

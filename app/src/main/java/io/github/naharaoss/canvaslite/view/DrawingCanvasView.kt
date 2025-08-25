@@ -2,6 +2,7 @@ package io.github.naharaoss.canvaslite.view
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Bitmap
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.util.Log
@@ -11,6 +12,8 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Matrix
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.set
 import io.github.naharaoss.canvaslite.engine.Blending
 import io.github.naharaoss.canvaslite.engine.PenInput
 import io.github.naharaoss.canvaslite.engine.brush.Brush
@@ -19,6 +22,9 @@ import io.github.naharaoss.canvaslite.engine.project.Canvas
 import io.github.naharaoss.canvaslite.engine.project.Layer
 import io.github.naharaoss.canvaslite.engine.renderer.CanvasRenderer
 import io.github.naharaoss.canvaslite.gl.getGLError
+import java.io.File
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import kotlin.properties.Delegates
@@ -241,6 +247,42 @@ open class DrawingCanvasView(context: Context) : GLSurfaceView(context) {
                 }
             }
         }
+
+        fun captureThumbnail(): Bitmap? {
+            val canvas = this.canvas
+            val renderer = this.renderer
+            if (canvas == null || renderer == null) return null
+
+            val viewportWidth = if (canvas.canvasSize != null) canvas.canvasSize!!.width else 1024
+            val viewportHeight = if (canvas.canvasSize != null) canvas.canvasSize!!.height else 1024
+            val thumbnailWidth = if (viewportWidth > viewportHeight) 1024 else viewportWidth * 1024 / viewportHeight
+            val thumbnailHeight = if (viewportWidth > viewportHeight) viewportHeight * 1024 / viewportWidth else 1024
+
+            val dst = ByteBuffer.allocateDirect(thumbnailWidth * thumbnailHeight * 4).order(ByteOrder.nativeOrder())
+            renderer.captureAsRgba(
+                worldToViewport = if (canvas.canvasSize == null) worldToViewport else Matrix().apply {
+                    scale(2f / viewportWidth, -2f / viewportHeight)
+                },
+                width = thumbnailWidth,
+                height = thumbnailHeight,
+                dst = dst
+            )
+            dst.flip()
+
+            val bitmap = createBitmap(thumbnailWidth, thumbnailHeight)
+
+            for (y in 0..<thumbnailHeight) {
+                for (x in 0..<thumbnailWidth) {
+                    val r = dst.get().toInt() shl 16
+                    val g = dst.get().toInt() shl 8
+                    val b = dst.get().toInt() shl 0
+                    val a = dst.get().toInt() shl 24
+                    bitmap[x, y] = r or g or b or a
+                }
+            }
+
+            return bitmap
+        }
     }
 
     private val inputHandler = object : MotionInputHandler() {
@@ -289,6 +331,12 @@ open class DrawingCanvasView(context: Context) : GLSurfaceView(context) {
                     layer = layer,
                     brushColor = brushColor
                 )
+
+                if (finished) {
+                    viewRenderer.captureThumbnail()?.also {
+                        viewRenderer.canvas?.putThumbnail(it)
+                    }
+                }
             }
 
             requestRender()

@@ -6,6 +6,7 @@ import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
@@ -51,6 +53,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -191,9 +194,10 @@ fun LibraryPageScaffold(
 @Composable
 fun LibraryPageContent(
     modifier: Modifier = Modifier,
-    items: List<Library.Item>?,
+    empty: Boolean,
+    loading: Boolean,
     innerPadding: PaddingValues,
-    onOpen: (Library.Item) -> Unit
+    content: LazyStaggeredGridScope.() -> Unit
 ) {
     Box(modifier.padding(innerPadding)) {
         LazyVerticalStaggeredGrid(
@@ -203,55 +207,30 @@ fun LibraryPageContent(
             verticalItemSpacing = 16.dp,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            if (items != null) {
-                when (items.isEmpty()) {
-                    true -> item(span = StaggeredGridItemSpan.FullLine) {
-                        CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurfaceVariant) {
-                            Column(
-                                modifier = Modifier.padding(0.dp, 96.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Icon(
-                                    modifier = Modifier.size(96.dp),
-                                    painter = painterResource(R.drawable.folder_24px),
-                                    contentDescription = null
-                                )
-                                Text("Umm... nothing here!")
-                            }
-                        }
-                    }
-                    false -> items(items, { it.libraryId }) { item ->
-                        LibraryItem(
-                            modifier = Modifier.fillMaxWidth(),
-                            onClick = { onOpen(item) },
-                            name = { Text(item.metadata.name) },
-                            supportingContent = {
-                                Text(when {
-                                    item.type == Library.ItemType.Folder -> "Folder"
-                                    item.type == Library.ItemType.Canvas && item.metadata.canvasSize == null -> "Infinite canvas"
-                                    item.type == Library.ItemType.Canvas && item.metadata.canvasSize != null -> item.metadata.canvasSize.toString()
-                                    else -> "Unknown"
-                                })
-                                TimeDisplayText(item.metadata.lastModified)
-                            }
+            if (empty) {
+                item(span = StaggeredGridItemSpan.FullLine) {
+                    CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurfaceVariant) {
+                        Column(
+                            modifier = Modifier.padding(0.dp, 96.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            when (item.type) {
-                                Library.ItemType.Canvas -> Box(Modifier
-                                    .aspectRatio(item.metadata.canvasSize
-                                        ?.let { it.width / it.height.toFloat() }
-                                        ?: 1f)
-                                    .background(Color.White, MaterialTheme.shapes.medium))
-                                else -> {}
-                            }
+                            Icon(
+                                modifier = Modifier.size(96.dp),
+                                painter = painterResource(R.drawable.folder_24px),
+                                contentDescription = null
+                            )
+                            Text("Umm... nothing here!")
                         }
                     }
                 }
+            } else {
+                content()
             }
         }
 
         AnimatedContent(
             modifier = Modifier.align(Alignment.Center),
-            targetState = items == null,
+            targetState = loading,
             content = { loading -> if (loading) LoadingIndicator(Modifier.align(Alignment.Center)) }
         )
     }

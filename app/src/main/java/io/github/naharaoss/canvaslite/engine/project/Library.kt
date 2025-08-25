@@ -1,5 +1,6 @@
 package io.github.naharaoss.canvaslite.engine.project
 
+import androidx.compose.ui.graphics.ImageBitmap
 import io.github.naharaoss.canvaslite.ext.ZonedDateTimeSerializer
 import kotlinx.serialization.Serializable
 import java.time.ZonedDateTime
@@ -13,6 +14,8 @@ interface Library {
     suspend fun createCanvas(folderId: String?, preset: Canvas.CanvasPreset): Item
     suspend fun loadCanvas(canvasId: String): Canvas
     suspend fun delete(libraryId: String)
+
+    suspend fun loadThumbnail(canvasId: String): ImageBitmap?
 
     data class Item(
         val libraryId: String,
